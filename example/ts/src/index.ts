@@ -1,10 +1,17 @@
-import {grpc, Code, Metadata} from "grpc-web-client";
+import {Code, ConsoleDebuggerFactory, grpc, Metadata, registerDebugger} from "grpc-web-client";
 import {BookService} from "../_proto/examplecom/library/book_service_pb_service";
-import {QueryBooksRequest, Book, GetBookRequest} from "../_proto/examplecom/library/book_service_pb";
+import {Book, GetBookRequest, QueryBooksRequest} from "../_proto/examplecom/library/book_service_pb";
+import {TimingDebuggerFactory} from './debugger';
 
 declare const USE_TLS: boolean;
 const host = USE_TLS ? "https://localhost:9091" : "http://localhost:9090";
 
+registerDebugger(
+  ConsoleDebuggerFactory, // comes with grpc-web-client
+  TimingDebuggerFactory, // user defined debugger
+);
+
+// Construct and invoke a unary gRPC request
 function getBook() {
   const getBookRequest = new GetBookRequest();
   getBookRequest.setIsbn(60929871);
@@ -12,23 +19,21 @@ function getBook() {
     request: getBookRequest,
     host: host,
     onEnd: res => {
-      const { status, statusMessage, headers, message, trailers } = res;
-      console.log("getBook.onEnd.status", status, statusMessage);
-      console.log("getBook.onEnd.headers", headers);
+      const {status, message} = res;
       if (status === Code.OK && message) {
         console.log("getBook.onEnd.message", message.toObject());
+        writeToElement('get-book', message.toObject());
       }
-      console.log("getBook.onEnd.trailers", trailers);
-      queryBooks();
     }
   });
 }
 
-getBook();
-
+// Construct and invoke a streaming response request
 function queryBooks() {
   const queryBooksRequest = new QueryBooksRequest();
   queryBooksRequest.setAuthorPrefix("Geor");
+
+  const books: Book[] = [];
   grpc.invoke(BookService.QueryBooks, {
     request: queryBooksRequest,
     host: host,
@@ -36,10 +41,30 @@ function queryBooks() {
       console.log("queryBooks.onHeaders", headers);
     },
     onMessage: (message: Book) => {
+      books.push(message);
+      writeToElement('query-books', books.map(b => b.toObject()));
       console.log("queryBooks.onMessage", message.toObject());
     },
     onEnd: (code: Code, msg: string, trailers: Metadata) => {
       console.log("queryBooks.onEnd", code, msg, trailers);
     }
   });
+}
+
+function writeToElement(id: string, content: any) {
+  const element = document.getElementById(id);
+  if (element) {
+    element.innerText = JSON.stringify(content, null, '  ');
+  }
+}
+
+const getBookButton = document.getElementById('go-get-book');
+const queryBooksButton = document.getElementById('go-query-books');
+
+if (getBookButton) {
+  getBookButton.onclick = () => getBook()
+}
+
+if (queryBooksButton) {
+  queryBooksButton.onclick = () => queryBooks()
 }
