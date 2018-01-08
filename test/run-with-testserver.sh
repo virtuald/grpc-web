@@ -8,6 +8,7 @@ else
   function killGoTestServer {
     echo "Killing Go Test server..."
     kill ${SERVER_PID} &> /dev/null
+    killall testserver
   }
 
   echo "Starting Go Test server..."
@@ -15,7 +16,7 @@ else
   SERVER_PID=$!
 
   # Check the Go Test server started up ok.
-  sleep 0.5
+  sleep 5
   ps ${SERVER_PID} &> /dev/null
 
   # Kill the Go Test server when this script exists or is interrupted.

@@ -38,7 +38,7 @@ export interface Debugger {
   // Called with the request payload, potentially called multiple times with request streams
   onRequestMessage(payload: Message): void;
 
-  // Called when response headers are available, called once multiple times
+  // Called when response headers are available, called once times
   // This is a low level method intended to debug byte serialization
   onResponseHeaders(headers: Metadata, httpStatus: number): void;
 
