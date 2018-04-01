@@ -17,7 +17,11 @@ Here's an example of how to use it inside an existing gRPC Go server on a
 separate http.Server that serves over TLS:
 
     grpcServer := grpc.Server()
-    wrappedGrpc := grpcweb.WrapServer(grpcServer)
+    wrappedGrpc := grpcweb.WrapServer(grpcServer,
+        // Allow CORS for requests originating from 'my.tld'
+        grpcweb.WithOriginFunc(func(origin string) bool {
+    		return origin == "https://my.tld"
+    	}))
     tlsHttpServer.Handler = http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
     	if wrappedGrpc.IsGrpcWebRequest(req) {
     		wrappedGrpc.ServeHTTP(resp, req)
