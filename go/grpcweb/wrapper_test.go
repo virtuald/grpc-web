@@ -494,5 +494,4 @@ func (s *testServiceImpl) PingPongBidi(stream testproto.TestService_PingPongBidi
 			}
 		}
 	}
-	return nil
 }
