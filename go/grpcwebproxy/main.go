@@ -31,6 +31,9 @@ var (
 	flagHttpPort    = pflag.Int("server_http_debug_port", 8080, "TCP port to listen on for HTTP1.1 debug calls.")
 	flagHttpTlsPort = pflag.Int("server_http_tls_port", 8443, "TCP port to listen on for HTTPS (gRPC, gRPC-Web).")
 
+	flagCorsAllowAllOrigins = pflag.Bool("cors_allow_all_origins", false, "allow CORS requests from any origin.")
+	flagCorsAllowOrigins = pflag.StringSlice("cors_allow_origins", nil, "list of origin URLs to allow for CORS requests.")
+
 	runHttpServer = pflag.Bool("run_http_server", true, "whether to run HTTP server")
 	runTlsServer  = pflag.Bool("run_tls_server", true, "whether to run TLS server")
 
@@ -48,10 +51,23 @@ func main() {
 	grpcServer := buildGrpcProxyServer(logEntry)
 	errChan := make(chan error)
 
-	// gRPC-Web compatibility layer with CORS configured to accept on every request
+	if *flagCorsAllowAllOrigins && len(*flagCorsAllowOrigins) != 0 {
+		logrus.Fatal("Ambiguous cors_allow_all_origins and cors_allow_origins configuration. Either set cors_allow_all_origins=true OR specify one or more origins to whitelist with cors_allow_origins, not both.")
+	}
+
 	wrappedGrpc := grpcweb.WrapServer(grpcServer,
 		grpcweb.WithCorsForRegisteredEndpointsOnly(false),
-		grpcweb.WithOriginFunc(func(origin string) bool { return true }),
+		grpcweb.WithOriginFunc(func(origin string) bool {
+			if *flagCorsAllowAllOrigins {
+				return true
+			}
+			for _, allowedOrigin := range *flagCorsAllowOrigins {
+				if origin == allowedOrigin {
+					return true
+				}
+			}
+			return false
+		}),
 	)
 
 	if !*runHttpServer && !*runTlsServer {

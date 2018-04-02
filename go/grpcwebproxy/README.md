@@ -33,6 +33,7 @@ $GOPATH/bin/grpcwebproxy
     --server_tls_key_file=../../misc/localhost.key \
     --backend_addr=localhost:9090 \
     --backend_tls_noverify
+    --cors_allow_all_origins=true
 ```
 
 ### Running specific servers
