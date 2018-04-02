@@ -13,11 +13,11 @@ See https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md for the
 protocol specification.
 
 Here's an example of how to use it inside an existing gRPC Go server on a
-separate http.Server that serves over TLS:
+separate http.Server that serves over TLS and serves CORS headers for requests
+originating from https://my.tld:
 
     grpcServer := grpc.Server()
     wrappedGrpc := grpcweb.WrapServer(grpcServer,
-        // Allow CORS for requests originating from 'my.tld'
         grpcweb.WithOriginFunc(func(origin string) bool {
     		return origin == "https://my.tld"
     	}))
