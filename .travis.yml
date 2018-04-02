@@ -52,5 +52,6 @@ install:
 before_script:
   - ./test/start-testserver.sh &
 script:
+  - set -e
   - ./lint-all.sh
   - travis_retry npm run test
