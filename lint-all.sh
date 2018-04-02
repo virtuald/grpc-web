@@ -4,8 +4,7 @@ set -e
 
 echo "Linting go sources"
 pushd ./go
-./checkup.sh
-./fixup.sh
+./lint.sh
 popd
 
 echo "Linting Typescript sources"

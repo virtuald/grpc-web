@@ -7,28 +7,32 @@ function print_real_go_files {
     grep --files-without-match 'DO NOT EDIT!' $(find . -iname '*.go')
 }
 
-function generate_markdown {
-    echo "Generating markdown using godocdown in..."
-    oldpwd=$(pwd)
-    for i in $(find . -iname 'doc.go'); do
-        dir=${i%/*}
-        echo "- $dir"
-        cd ${dir}
-        ${GOPATH}/bin/godocdown -heading=Title -o DOC.md
-        ln -s DOC.md README.md 2> /dev/null # can fail
-        cd ${oldpwd}
-    done;
+function check_markdown_up_to_date {
+    ./gen-docs.sh
+    if [[ $? -ne 0 ]]; then
+      echo "ERROR: Failed to generate documentation."
+      exit 1
+    fi
 
-    git diff --name-only --exit-code | grep -q DOC.md
+    git diff --name-only | grep -q DOC.md
     if [[ $? -ne 1 ]]; then
       echo "ERROR: Documentation changes detected, please commit them."
       exit 1
     fi
 }
 
-function check_no_documentation_changes {
-  echo "Checking generated documentation is up to date"
-
+function govet_all {
+    echo "Running govet"
+    ret=0
+    for i in $(print_real_go_files); do
+        output=$(go tool vet -all=true -tests=false ${i})
+        ret=$(($ret | $?))
+        echo -n ${output}
+    done;
+    if [[ $? -ne 0 ]]; then
+      echo "ERROR: go vet errors detected."
+      exit 1
+    fi
 }
 
 function goimports_all {
@@ -40,5 +44,6 @@ function goimports_all {
     fi
 }
 
-generate_markdown
+check_markdown_up_to_date
 goimports_all
+govet_all
