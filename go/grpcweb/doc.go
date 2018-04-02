@@ -10,17 +10,21 @@ streams are unsupported due to limitations in browser protocol support.
 
 See https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md for the protocol specification.
 
-Here's an example of how to use it inside an existing gRPC Go server on a separate http.Server that serves over TLS:
+Here's an example of how to use it inside an existing gRPC Go server on a separate http.Server that serves over TLS
+and serves CORS headers for requests originating from https://my.tld:
 
-	grpcServer := grpc.Server()
-	wrappedGrpc := grpcweb.WrapServer(grpcServer)
-	tlsHttpServer.Handler = http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		if wrappedGrpc.IsGrpcWebRequest(req) {
-			wrappedGrpc.ServeHTTP(resp, req)
-		}
-		// Fall back to other servers.
-		http.DefaultServeMux.ServeHTTP(resp, req)
-	})
+    grpcServer := grpc.Server()
+    wrappedGrpc := grpcweb.WrapServer(grpcServer,
+        grpcweb.WithOriginFunc(func(origin string) bool {
+    		return origin == "https://my.tld"
+    	}))
+    tlsHttpServer.Handler = http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+    	if wrappedGrpc.IsGrpcWebRequest(req) {
+    		wrappedGrpc.ServeHTTP(resp, req)
+    	}
+    	// Fall back to other servers.
+    	http.DefaultServeMux.ServeHTTP(resp, req)
+    })
 
 If you'd like to have a standalone binary, please take a look at `grpcwebproxy`.
 
