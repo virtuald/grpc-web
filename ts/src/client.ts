@@ -7,6 +7,8 @@ import {Transport, TransportConstructor, DefaultTransportFactory} from "./transp
 import {MethodDefinition} from "./service";
 import {frameRequest} from "./util";
 import {ProtobufMessage} from "./message";
+import {createRequestId, RequestId} from "./identifier";
+import {MiddlewareDispatcher} from "./middleware";
 
 export interface ClientRpcOptions {
   host: string;
@@ -49,11 +51,15 @@ class GrpcClient<TRequest extends ProtobufMessage, TResponse extends ProtobufMes
   responseHeaders: Metadata;
   responseTrailers: Metadata;
 
+  requestId: RequestId;
+
   constructor(methodDescriptor: M, props: ClientRpcOptions) {
     this.methodDefinition = methodDescriptor;
     this.props = props;
+    this.requestId = createRequestId();
 
     this.createTransport();
+    MiddlewareDispatcher.onCreate(this.requestId, this.methodDefinition, props);
   }
 
   createTransport() {
@@ -198,6 +204,7 @@ class GrpcClient<TRequest extends ProtobufMessage, TResponse extends ProtobufMes
     this.props.debug && debug("rawOnHeaders", headers);
     if (this.completed) return;
     this.onHeadersCallbacks.forEach(callback => {
+      MiddlewareDispatcher.onHeaders(this.requestId, headers);
       detach(() => {
         callback(headers);
       });
