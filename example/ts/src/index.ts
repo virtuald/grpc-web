@@ -33,7 +33,11 @@ function queryBooks() {
 
   const s = client.queryBooks(queryBooksRequest);
   s.on("data", (message: Book) => {
-    // causes an error (but this is probably not the only way to cause it!)
-    s.cancel();
+    console.log('data received', message.toObject());
   });
+  setTimeout( () => {
+    console.log("timeout set");
+    s.cancel();
+    queryBooks();
+  }, 0);
 }
