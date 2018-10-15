@@ -1,5 +1,5 @@
 import {grpc} from "grpc-web-client";
-import {BookService} from "../_proto/examplecom/library/book_service_pb_service";
+import {BookService, BookServiceClient} from "../_proto/examplecom/library/book_service_pb_service";
 import {QueryBooksRequest, Book, GetBookRequest} from "../_proto/examplecom/library/book_service_pb";
 
 declare const USE_TLS: boolean;
@@ -27,20 +27,13 @@ function getBook() {
 getBook();
 
 function queryBooks() {
+  const client = new BookServiceClient(host);
   const queryBooksRequest = new QueryBooksRequest();
   queryBooksRequest.setAuthorPrefix("Geor");
-  const client = grpc.client(BookService.QueryBooks, {
-    host: host,
+
+  const s = client.queryBooks(queryBooksRequest);
+  s.on("data", (message: Book) => {
+    // causes an error (but this is probably not the only way to cause it!)
+    s.cancel();
   });
-  client.onHeaders((headers: grpc.Metadata) => {
-    console.log("queryBooks.onHeaders", headers);
-  });
-  client.onMessage((message: Book) => {
-    console.log("queryBooks.onMessage", message.toObject());
-  });
-  client.onEnd((code: grpc.Code, msg: string, trailers: grpc.Metadata) => {
-    console.log("queryBooks.onEnd", code, msg, trailers);
-  });
-  client.start();
-  client.send(queryBooksRequest);
 }
